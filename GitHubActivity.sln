@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{CD52E2BE-71C4-4BF1-9CB4-E45B15E0700F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitHubActivity.CLI", "src\GitHubActivity.CLI\GitHubActivity.CLI.csproj", "{154A6DE7-08AF-4404-8C16-4AE6E1635444}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitHubActivity.Core", "src\GitHubActivity.Core\GitHubActivity.Core.csproj", "{6642F363-D682-4340-8F5D-5186F8757B5E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{154A6DE7-08AF-4404-8C16-4AE6E1635444}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{154A6DE7-08AF-4404-8C16-4AE6E1635444}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{154A6DE7-08AF-4404-8C16-4AE6E1635444}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{154A6DE7-08AF-4404-8C16-4AE6E1635444}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6642F363-D682-4340-8F5D-5186F8757B5E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6642F363-D682-4340-8F5D-5186F8757B5E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6642F363-D682-4340-8F5D-5186F8757B5E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6642F363-D682-4340-8F5D-5186F8757B5E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{154A6DE7-08AF-4404-8C16-4AE6E1635444} = {CD52E2BE-71C4-4BF1-9CB4-E45B15E0700F}
+		{6642F363-D682-4340-8F5D-5186F8757B5E} = {CD52E2BE-71C4-4BF1-9CB4-E45B15E0700F}
+	EndGlobalSection
+EndGlobal
