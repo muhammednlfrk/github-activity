@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace GitHubActivity.Core;
+namespace GitHubActivity.Core.Models;
 
 public class Issue
 {

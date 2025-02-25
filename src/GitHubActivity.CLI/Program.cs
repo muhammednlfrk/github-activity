@@ -1,100 +1,137 @@
-﻿using System.Text.Json;
-using GitHubActivity.Core;
+﻿using GitHubActivity.Core.Infrastructure;
+using GitHubActivity.Core.Models;
+using GitHubActivity.Core.Models.Payload;
 
 namespace GitHubActivity.CLI;
 
 class Program
 {
-    private static readonly string GitHubApiUrl = "https://api.github.com/users/{0}/events";
-
-    public static async Task Main(string[] args)
+    public static async Task<int> Main(string[] args)
     {
-        string username = args.Length > 0 ? args[0] : "ahmetb";
-
-        Console.WriteLine($"Fetching events for {username}...");
-
-        List<GitHubEvent> events = await GetGitHubUserEventsAsync(username);
-
-        Console.WriteLine($"Events for {username}:");
-
-        foreach (var e in events)
+        // If help parameter sended, print help message
+        if (args.Length < 1 && (args[0] == "--help" || args[0] == "-h"))
         {
-            switch (e.Type)
-            {
-                case "PushEvent":
-                    Console.WriteLine($"{e.Actor.Login} pushed {e.Payload["size"]} commit(s) to {e.Repo.Name}");
-                    break;
-                case "CommitCommentEvent":
-                    Console.WriteLine($"{e.Actor.Login} commented on commit in {e.Repo.Name}");
-                    break;
-                case "PullRequestEvent":
-                    Console.WriteLine($"{e.Actor.Login} created a pull request in {e.Repo.Name}");
-                    break;
-                case "IssuesEvent":
-                    Console.WriteLine($"{e.Actor.Login} opened an issue in {e.Repo.Name}");
-                    break;
-                case "IssueCommentEvent":
-                    Console.WriteLine($"{e.Actor.Login} commented on issue in {e.Repo.Name}");
-                    break;
-                case "CreateEvent":
-                    Console.WriteLine($"{e.Actor.Login} created {e.Payload["ref_type"]} {e.Payload["ref"]} in {e.Repo.Name}");
-                    break;
-                case "DeleteEvent":
-                    Console.WriteLine($"{e.Actor.Login} deleted {e.Payload["ref_type"]} {e.Payload["ref"]} in {e.Repo.Name}");
-                    break;
-                case "ForkEvent":
-                    Console.WriteLine($"{e.Actor.Login} forked {e.Repo.Name}");
-                    break;
-                case "ReleaseEvent":
-                    JsonElement releseElement = (JsonElement)e.Payload["release"];
-                    string? tagName = releseElement.GetProperty("tag_name").GetString();
-                    Console.WriteLine($"{e.Actor.Login} released {e.Payload["release"]}{tagName} in {e.Repo.Name}");
-                    break;
-                case "GollumEvent":
-                    Console.WriteLine($"{e.Actor.Login} created or updated a wiki in {e.Repo.Name}");
-                    break;
-                case "MemberEvent":
-                    JsonElement memberElement = (JsonElement)e.Payload["member"];
-                    string? memberLogin = memberElement.GetProperty("login").GetString();
-                    Console.WriteLine($"{e.Actor.Login} added {memberLogin} as a collaborator to {e.Repo.Name}");
-                    break;
-                case "SponsorshipEvent":
-                    JsonElement sponsorshipElement = (JsonElement)e.Payload["sponsorship"];
-                    JsonElement sponseeElement = sponsorshipElement.GetProperty("sponsee");
-                    string? sponseeLogin = sponseeElement.GetProperty("login").GetString();
-                    Console.WriteLine($"{e.Actor.Login} sponsored {sponseeLogin} in {e.Repo.Name}");
-                    break;
-                case "PublicEvent":
-                    Console.WriteLine($"{e.Actor.Login} open sourced {e.Repo.Name}");
-                    break;
-                case "PullRequestReviewEvent":
-                    Console.WriteLine($"{e.Actor.Login} reviewed a pull request in {e.Repo.Name}");
-                    break;
-                case "PullRequestReviewCommentEvent":
-                    Console.WriteLine($"{e.Actor.Login} commented on a pull request in {e.Repo.Name}");
-                    break;
-                case "PullRequestReviewThreadEvent":
-                    Console.WriteLine($"{e.Actor.Login} commented on a thread in a pull request in {e.Repo.Name}");
-                    break;
-                case "WatchEvent":
-                    Console.WriteLine($"{e.Actor.Login} starred {e.Repo.Name}");
-                    break;
-                default:
-                    Console.WriteLine($"Unknown event type: {e.Type}");
-                    break;
-            }
+            printHelp();
+            return 0;
+        }
+
+        // Get username from the first parameter
+        string username = args[0];
+
+        // Fetch events.
+        try
+        {
+            Console.WriteLine($"Fetching events for {username}...");
+            List<GitHubEvent> events = await GitHubEventAPI.GetGitHubUserEventsAsync(username);
+            Console.WriteLine($"{(events.Count == 0 ? "No" : events.Count)} event(s) found");
+            // Print events.
+            foreach (GitHubEvent e in events)
+                printEvent(e, username);
+            return 0;
+        }
+        catch (HttpRequestException)
+        {
+            Console.WriteLine("An error occurred when trying to connect server.");
+            Console.WriteLine("Please check your internet connection and try again later");
+            return 1;
+        }
+        catch
+        {
+            Console.WriteLine($"An error occurred");
+            return 1;
         }
     }
 
-    public static async Task<List<GitHubEvent>> GetGitHubUserEventsAsync(string username)
+    private static void printHelp()
     {
-        using HttpClient client = new();
-        client.DefaultRequestHeaders.Add("User-Agent", "GitHubActivity.CLI");
+        Console.WriteLine("Usage: ghact <username>");
+    }
 
-        string url = string.Format(GitHubApiUrl, username);
-        var response = await client.GetStringAsync(url);
-        var events = JsonSerializer.Deserialize<List<GitHubEvent>>(response) ?? [];
+    private static void printEvent(GitHubEvent e, string username)
+    {
+        switch (e.Type)
+        {
+            case GitHubEvent.EventType.CommitCommentEvent:
+                Console.WriteLine($"{username} commented on a commit at {e.Repo.Name}");
+                break;
 
-        return events;
+            case GitHubEvent.EventType.CreateEvent:
+                CreateEventPayload payload = (CreateEventPayload)e.Payload;
+                Console.WriteLine($"{username} created {payload.RefType} {payload.Ref} at {e.Repo.Name}");
+                break;
+
+            case GitHubEvent.EventType.DeleteEvent:
+                DeleteEventPayload deletePayload = (DeleteEventPayload)e.Payload;
+                Console.WriteLine($"{username} deleted {deletePayload.RefType} {deletePayload.Ref} at {e.Repo.Name}");
+                break;
+
+            case GitHubEvent.EventType.ForkEvent:
+                Console.WriteLine($"{username} forked {e.Repo.Name}");
+                break;
+
+            case GitHubEvent.EventType.GollumEvent:
+                Console.WriteLine($"{username} updated the wiki in {e.Repo.Name}");
+                break;
+
+            case GitHubEvent.EventType.IssueCommentEvent:
+                IssueCommentEventPayload issueCommentPayload = (IssueCommentEventPayload)e.Payload;
+                Console.WriteLine($"{username} commented on issue #{issueCommentPayload.Issue.Number} in {e.Repo.Name}");
+                break;
+
+            case GitHubEvent.EventType.IssuesEvent:
+                IssuesEventPayload issuesPayload = (IssuesEventPayload)e.Payload;
+                Console.WriteLine($"{username} {issuesPayload.Action} issue #{issuesPayload.Issue.Number} in {e.Repo.Name}");
+                break;
+
+            case GitHubEvent.EventType.MemberEvent:
+                Console.WriteLine($"{username} added {e.Actor.Login} as a collaborator to {e.Repo.Name}");
+                break;
+
+            case GitHubEvent.EventType.PublicEvent:
+                Console.WriteLine($"{username} open sourced {e.Repo.Name}");
+                break;
+
+            case GitHubEvent.EventType.PullRequestEvent:
+                PullRequestEventPayload prPayload = (PullRequestEventPayload)e.Payload;
+                Console.WriteLine($"{username} {prPayload.Action} pull request #{prPayload.PullRequest.Number} in {e.Repo.Name}");
+                break;
+
+            case GitHubEvent.EventType.PullRequestReviewEvent:
+                PullRequestReviewEventPayload prReviewPayload = (PullRequestReviewEventPayload)e.Payload;
+                Console.WriteLine($"{username} {prReviewPayload.Action} a review on pull request #{prReviewPayload.PullRequest.Number} in {e.Repo.Name}");
+                break;
+
+            case GitHubEvent.EventType.PullRequestReviewCommentEvent:
+                PullRequestReviewCommentEventPayload prReviewCommentPayload = (PullRequestReviewCommentEventPayload)e.Payload;
+                Console.WriteLine($"{username} commented on a review on pull request #{prReviewCommentPayload.PullRequest.Number} in {e.Repo.Name}");
+                break;
+
+            case GitHubEvent.EventType.PullRequestReviewThreadEvent:
+                PullRequestReviewThreadEventPayload prReviewThreadPayload = (PullRequestReviewThreadEventPayload)e.Payload;
+                Console.WriteLine($"{username} commented on a review thread on pull request #{prReviewThreadPayload.PullRequest.Number} in {e.Repo.Name}");
+                break;
+
+            case GitHubEvent.EventType.PushEvent:
+                PushEventPayload pushPayload = (PushEventPayload)e.Payload;
+                Console.WriteLine($"{username} pushed {pushPayload.Commits.Count} commits to {pushPayload.Ref} at {e.Repo.Name}");
+                break;
+
+            case GitHubEvent.EventType.ReleaseEvent:
+                ReleaseEventPayload releasePayload = (ReleaseEventPayload)e.Payload;
+                Console.WriteLine($"{username} released {releasePayload.Release.TagName} at {e.Repo.Name}");
+                break;
+
+            case GitHubEvent.EventType.SponsorshipEvent:
+                Console.WriteLine("TODO: SponsorshipEvent");
+                break;
+
+            case GitHubEvent.EventType.WatchEvent:
+                Console.WriteLine($"{username} starred {e.Repo.Name}");
+                break;
+
+            default:
+                Console.WriteLine($"Unknown event type: {e.Type}");
+                break;
+        }
     }
 }
