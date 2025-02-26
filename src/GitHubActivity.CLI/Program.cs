@@ -9,7 +9,7 @@ class Program
     public static async Task<int> Main(string[] args)
     {
         // If help parameter sended, print help message
-        if (args.Length < 1 && (args[0] == "--help" || args[0] == "-h"))
+        if (args.Length < 1 || args[0] == "--help" || args[0] == "-h")
         {
             printHelp();
             return 0;
